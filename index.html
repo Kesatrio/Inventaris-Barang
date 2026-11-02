@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manajemen Inventaris</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, Arial, sans-serif; background: #f3f4f6; color: #1f2937; }
+  .container { max-width: 1000px; margin: 32px auto; padding: 24px; background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  h1 { margin: 0; font-size: 1.1rem; color: #6b7280; font-weight: 600; }
+  h2 { margin: 4px 0 20px; font-size: 1.5rem; }
+  .nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; }
+  .nav button { border: 0; background: none; padding: 6px 14px; border-radius: 6px; color: #374151; font-weight: 600; font-size: .9rem; cursor: pointer; }
+  .nav button:hover { background: #f3f4f6; }
+  .nav button.aktif { background: #2563eb; color: #fff; }
+  .toolbar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  input, select, button { font: inherit; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
+  button { cursor: pointer; }
+  .primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .bahaya { background: #dc2626; border-color: #dc2626; color: #fff; }
+  .kecil { padding: 4px 10px; font-size: .85rem; }
+  .tabel-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; white-space: nowrap; }
+  th { background: #f9fafb; font-size: .85rem; text-transform: uppercase; color: #6b7280; }
+  td.kosong { text-align: center; color: #6b7280; padding: 24px; }
+  td.aksi { display: flex; gap: 6px; }
+  .alert { padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
+  .alert.sukses { background: #dcfce7; color: #166534; }
+  .alert.error { background: #fee2e2; color: #991b1b; }
+  dialog { border: none; border-radius: 10px; padding: 24px; width: min(520px, 92vw); box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  dialog::backdrop { background: rgba(17,24,39,.5); }
+  dialog h2 { margin-top: 0; }
+  label { display: block; margin-bottom: 14px; font-weight: 600; font-size: .9rem; }
+  label input, label select { width: 100%; margin-top: 4px; font-weight: 400; }
+  .hint { display: block; margin-top: 4px; font-weight: 400; font-size: .8rem; color: #6b7280; }
+  .tombol { display: flex; gap: 8px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <nav class="nav" id="nav"></nav>
+  <h1>Manajemen Inventaris</h1>
+  <h2 id="judul"></h2>
+
+  <div id="pesan"></div>
+
+  <div class="toolbar">
+    <input id="cari" type="search" placeholder="Cari di tabel ini...">
+    <button id="btnTambah" class="primary"></button>
+  </div>
+
+  <div class="tabel-wrap">
+    <table>
+      <thead id="kepala"></thead>
+      <tbody id="isi"></tbody>
+    </table>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <h2 id="judulForm"></h2>
+  <div id="pesanForm"></div>
+  <form id="form"></form>
+</dialog>
+
+<script>
+
+const MENU = {
+  barang: { nama: 'Barang', judul: 'Data Barang', tambah: '+ Tambah Barang', ubah: true, hapus: 'Yakin hapus barang ini?',
+    kolom: [['Kode', r => r.kode_barang], ['Nama Barang', r => r.nama_barang], ['Kategori', r => r.nama_kategori],
+            ['Lokasi', r => r.nama_lokasi], ['Stok', r => r.stok + ' ' + r.satuan], ['Harga', r => rupiah(r.harga)]],
+    field: [
+      { n: 'kode_barang', l: 'Kode Barang', max: 30, req: 1 },
+      { n: 'nama_barang', l: 'Nama Barang', max: 150, req: 1 },
+      { n: 'id_kategori', l: 'Kategori', sel: 'kategori', id: 'id_kategori', lab: o => o.nama_kategori },
+      { n: 'id_lokasi', l: 'Lokasi', sel: 'lokasi', id: 'id_lokasi', lab: o => o.nama_lokasi },
+      { n: 'satuan', l: 'Satuan', max: 20, req: 1, def: 'pcs' },
+      { n: 'stok', l: 'Stok', type: 'number', min: 0, req: 1, def: 0, kunci: 'Ubah stok lewat menu Barang Masuk atau Keluar.' },
+      { n: 'harga', l: 'Harga (Rp)', type: 'number', min: 0, req: 1, def: 0 },
+    ] },
+  masuk: { nama: 'Barang Masuk', judul: 'Barang Masuk', tambah: '+ Catat Barang Masuk', hapus: 'Hapus catatan ini? Stok akan dikurangi kembali.',
+    kolom: [['Tanggal', r => tgl(r.tanggal)], ['Barang', r => r.kode_barang + ' - ' + r.nama_barang],
+            ['Supplier', r => r.nama_supplier], ['Jumlah', r => '+' + r.jumlah + ' ' + r.satuan]],
+    field: [
+      { n: 'tanggal', l: 'Tanggal', type: 'date', req: 1, def: 'hariini' },
+      { n: 'id_barang', l: 'Barang', sel: 'barang', id: 'id_barang', lab: o => `${o.kode_barang} - ${o.nama_barang} (stok: ${o.stok})` },
+      { n: 'id_supplier', l: 'Supplier', sel: 'supplier', id: 'id_supplier', lab: o => o.nama_supplier },
+      { n: 'jumlah', l: 'Jumlah', type: 'number', min: 1, req: 1 },
+    ] },
+  keluar: { nama: 'Barang Keluar', judul: 'Barang Keluar', tambah: '+ Catat Barang Keluar', hapus: 'Hapus catatan ini? Stok akan dikembalikan.',
+    kolom: [['Tanggal', r => tgl(r.tanggal)], ['Barang', r => r.kode_barang + ' - ' + r.nama_barang],
+            ['Jumlah', r => '-' + r.jumlah + ' ' + r.satuan], ['Keterangan', r => r.keterangan ?? '-']],
+    field: [
+      { n: 'tanggal', l: 'Tanggal', type: 'date', req: 1, def: 'hariini' },
+      { n: 'id_barang', l: 'Barang', sel: 'barang', id: 'id_barang', lab: o => `${o.kode_barang} - ${o.nama_barang} (stok: ${o.stok})` },
+      { n: 'jumlah', l: 'Jumlah', type: 'number', min: 1, req: 1 },
+      { n: 'keterangan', l: 'Keterangan', max: 255, ph: 'Contoh: dipakai bagian IT' },
+    ] },
+  kategori: { nama: 'Kategori', judul: 'Data Kategori', tambah: '+ Tambah Kategori', ubah: true, pk: 'id_kategori', hapus: 'Yakin hapus data ini?',
+    kolom: [['Nama Kategori', r => r.nama_kategori]],
+    field: [{ n: 'nama_kategori', l: 'Nama Kategori', max: 100, req: 1 }] },
+  lokasi: { nama: 'Lokasi', judul: 'Data Lokasi', tambah: '+ Tambah Lokasi', ubah: true, pk: 'id_lokasi', hapus: 'Yakin hapus data ini?',
+    kolom: [['Nama Lokasi', r => r.nama_lokasi], ['Keterangan', r => r.keterangan ?? '-']],
+    field: [{ n: 'nama_lokasi', l: 'Nama Lokasi', max: 100, req: 1 }, { n: 'keterangan', l: 'Keterangan', max: 255 }] },
+  supplier: { nama: 'Supplier', judul: 'Data Supplier', tambah: '+ Tambah Supplier', ubah: true, pk: 'id_supplier', hapus: 'Yakin hapus data ini?',
+    kolom: [['Nama Supplier', r => r.nama_supplier], ['Telepon', r => r.telepon ?? '-'], ['Alamat', r => r.alamat ?? '-']],
+    field: [{ n: 'nama_supplier', l: 'Nama Supplier', max: 100, req: 1 }, { n: 'telepon', l: 'Telepon', max: 20 }, { n: 'alamat', l: 'Alamat', max: 255 }] },
+};
+MENU.barang.pk = 'id_barang';
+MENU.masuk.pk = 'id';
+MENU.keluar.pk = 'id';
+
+const $ = id => document.getElementById(id);
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rupiah = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+const tgl = s => { const [y, m, d] = String(s).split('-'); return `${d}-${m}-${y}`; };
+const hariIni = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+
+async function api(t, body) {
+  const opsi = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
+  let j;
+  try { j = await (await fetch('api.php?t=' + t, opsi)).json(); }
+  catch (e) { throw new Error('Tidak bisa terhubung ke server. Pastikan Apache dan MySQL menyala, dan buka lewat http://localhost/ (jangan klik dua kali file ini).'); }
+  if (!j.ok) throw new Error(j.pesan);
+  return j;
+}
+
+function pesan(tipe, teks, id = 'pesan') {
+  $(id).innerHTML = teks ? `<div class="alert ${tipe}">${esc(teks)}</div>` : '';
+  if (teks && tipe === 'sukses') setTimeout(() => { if ($(id).textContent === teks) $(id).innerHTML = ''; }, 4000);
+}
+
+let aktif = 'barang', data = [], opsi = {};
+
+async function buka(menu) {
+  aktif = menu;
+  location.hash = menu;
+  const c = MENU[menu];
+  $('judul').textContent = c.judul;
+  $('btnTambah').textContent = c.tambah;
+  $('cari').value = '';
+  pesan('', '');
+  $('nav').innerHTML = Object.entries(MENU).map(([k, m]) =>
+    `<button data-menu="${k}" class="${k === menu ? 'aktif' : ''}">${m.nama}</button>`).join('');
+  $('kepala').innerHTML = '<tr><th>No</th>' + c.kolom.map(k => `<th>${esc(k[0])}</th>`).join('') + '<th>Aksi</th></tr>';
+  $('isi').innerHTML = `<tr><td colspan="${c.kolom.length + 2}" class="kosong">Memuat data...</td></tr>`;
+  await muat();
+}
+
+async function muat() {
+  try { data = (await api(aktif)).data; gambar(); }
+  catch (e) { pesan('error', e.message); }
+}
+
+function gambar() {
+  const c = MENU[aktif], kata = $('cari').value.trim().toLowerCase();
+  const baris = data.filter(r => !kata || c.kolom.some(k => String(k[1](r)).toLowerCase().includes(kata)));
+  if (!baris.length) {
+    $('isi').innerHTML = `<tr><td colspan="${c.kolom.length + 2}" class="kosong">${data.length ? 'Tidak ada yang cocok.' : 'Belum ada data.'}</td></tr>`;
+    return;
+  }
+  $('isi').innerHTML = baris.map((r, i) => `<tr>
+    <td>${i + 1}</td>
+    ${c.kolom.map(k => `<td>${esc(k[1](r))}</td>`).join('')}
+    <td class="aksi">
+      ${c.ubah ? `<button class="kecil" data-aksi="ubah" data-id="${esc(r[c.pk])}">Ubah</button>` : ''}
+      <button class="kecil bahaya" data-aksi="hapus" data-id="${esc(r[c.pk])}">Hapus</button>
+    </td></tr>`).join('');
+}
+
+async function bukaForm(r) {
+  const c = MENU[aktif], edit = !!r;
+  try { opsi = (await api('opsi')).data; } catch (e) { pesan('error', e.message); return; }   // stok terbaru
+  $('judulForm').textContent = (edit ? 'Ubah ' : 'Tambah ') + c.nama;
+  pesan('', '', 'pesanForm');
+  $('form').innerHTML = `<input type="hidden" name="id" value="${edit ? esc(r[c.pk]) : ''}">` + c.field.map(f => {
+    const nilai = edit ? (r[f.n] ?? '') : (f.def === 'hariini' ? hariIni() : (f.def ?? ''));
+    const input = f.sel
+      ? `<select name="${f.n}" required><option value="">-- Pilih --</option>` + opsi[f.sel].map(o =>
+          `<option value="${esc(o[f.id])}" ${String(o[f.id]) === String(nilai) ? 'selected' : ''}>${esc(f.lab(o))}</option>`).join('') + '</select>'
+      : `<input type="${f.type || 'text'}" name="${f.n}" value="${esc(nilai)}" ${f.max ? `maxlength="${f.max}"` : ''}
+          ${f.min != null ? `min="${f.min}" step="1"` : ''} ${f.req ? 'required' : ''} ${f.ph ? `placeholder="${esc(f.ph)}"` : ''}
+          ${edit && f.kunci ? 'readonly' : ''}>`;
+    return `<label>${esc(f.l)}${input}${edit && f.kunci ? `<span class="hint">${esc(f.kunci)}</span>` : ''}</label>`;
+  }).join('') + `<div class="tombol"><button type="submit" class="primary">Simpan</button>
+                 <button type="button" onclick="$('dlg').close()">Batal</button></div>`;
+  $('dlg').showModal();
+}
+
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const kirim = Object.fromEntries(new FormData($('form')).entries());
+  kirim.aksi = (MENU[aktif].ubah && kirim.id) ? 'ubah' : 'tambah';
+  try {
+    const r = await api(aktif, kirim);
+    $('dlg').close();
+    pesan('sukses', r.pesan);
+    muat();
+  } catch (err) {
+    pesan('error', err.message, 'pesanForm');
+  }
+});
+
+// ---------- klik tombol ----------
+$('nav').addEventListener('click', e => { const b = e.target.closest('button[data-menu]'); if (b) buka(b.dataset.menu); });
+$('btnTambah').addEventListener('click', () => bukaForm(null));
+$('cari').addEventListener('input', gambar);
+$('isi').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-aksi]');
+  if (!b) return;
+  const c = MENU[aktif], id = b.dataset.id;
+  if (b.dataset.aksi === 'ubah') return bukaForm(data.find(r => String(r[c.pk]) === id));
+  if (!confirm(c.hapus)) return;
+  try { pesan('sukses', (await api(aktif, { aksi: 'hapus', id })).pesan); }
+  catch (err) { pesan('error', err.message); }
+  muat();
+});
+
+buka(MENU[location.hash.slice(1)] ? location.hash.slice(1) : 'barang');
+</script>
+</body>
+</html>
