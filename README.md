@@ -14,9 +14,9 @@ Aplikasi web untuk mengelola persediaan barang: data barang, kategori, lokasi pe
 
 | No | Nama | NIM | Peran |
 |---|---|---|---|
-| 1 | _isi_ | _isi_ | _isi_ |
-| 2 | _isi_ | _isi_ | _isi_ |
-| 3 | _isi_ | _isi_ | _isi_ |
+| 1 | Muhamad Kesatrio Aditya Putra | _isi_ | _isi_ |
+| 2 | Alldy Cahya Dinitra | _isi_ | _isi_ |
+| 3 | Annisa Aurellia | _isi_ | _isi_ |
 
 ---
 
