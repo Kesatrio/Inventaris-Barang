@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sistem Informasi Inventaris Barang</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="logo">📦 Inventaris Barang</div>
+    <nav id="nav"></nav>
+  </aside>
+  <main>
+    <header>
+      <h1 id="ttl"></h1>
+      <div class="hdr"><span id="mode" class="badge"></span> <button class="btn sm g" id="reset" hidden>Reset data contoh</button></div>
+    </header>
+    <section id="view"></section>
+  </main>
+</div>
+
+<dialog id="dlg">
+  <h3 id="dt"></h3>
+  <form id="frm">
+    <div id="ff"></div>
+    <p id="ferr" class="err"></p>
+    <div class="act">
+      <button type="button" class="btn g" id="cx">Batal</button>
+      <button class="btn">Simpan</button>
+    </div>
+  </form>
+</dialog>
+<div id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
