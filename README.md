@@ -2,13 +2,13 @@
 
 Aplikasi web untuk mengelola persediaan barang: data barang, kategori, lokasi penyimpanan, supplier, serta pencatatan barang masuk dan barang keluar yang otomatis memperbarui stok.
 
-> **Tugas Besar** — _isi nama mata kuliah_ · _isi nama dosen_ · Program Studi Informatika, Fakultas Teknik, Universitas Bengkulu
+> **Tugas Besar** — Basis Data · Program Studi Informatika, Fakultas Teknik, Universitas Bengkulu
 
 | | |
 |---|---|
-| **Kelompok** | _isi nomor/nama kelompok_ |
+| **Kelompok** | Kelompok 5 |
 | **Tema** | Sistem Informasi Manajemen Inventaris Barang |
-| **Demo online** | _isi link GitHub Pages, contoh: `https://username.github.io/nama-repo/`_ |
+| **Demo online** | https://kesatrio.github.io/Inventaris-Barang/#barang |
 
 ## 👥 Anggota Kelompok
 
