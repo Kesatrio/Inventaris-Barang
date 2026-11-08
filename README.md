@@ -12,7 +12,7 @@ Aplikasi web untuk mengelola persediaan barang: data barang, kategori, lokasi pe
 
 ## 👥 Anggota Kelompok
 
-| No | Nama | NIM | Peran |
+| No | Nama | NPM | Peran |
 |---|---|---|---|
 | 1 | Muhamad Kesatrio Aditya Putra | G1A025089 | Pembuat Website & Perancang Database |
 | 2 | Alldy Cahya Dinitra | G1A025085 | Pembuat PPT & Peninjau Laporan |
